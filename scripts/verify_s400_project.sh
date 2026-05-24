@@ -13,7 +13,13 @@ for file in config.example.json secrets.local.example.json config.json secrets.l
   python3 -m json.tool "$file" >/dev/null
 done
 
-./scripts/build_scanner.sh
+SCANNER="bin/S400BLEScan.app/Contents/MacOS/s400-ble-scan"
+INFO_PLIST="bin/S400BLEScan.app/Contents/Info.plist"
+if [[ ! -x "$SCANNER" || src/S400BLEScan/main.swift -nt "$SCANNER" || src/S400BLEScan/BluetoothUsage.plist -nt "$INFO_PLIST" ]]; then
+  ./scripts/build_scanner.sh
+else
+  echo "Scanner build is current."
+fi
 ./scripts/check_secrets.py
 
 latest_parsed="$(ls -t data/parsed_measurements/s400_measurements_*.jsonl 2>/dev/null | head -1 || true)"
