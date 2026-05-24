@@ -11,6 +11,8 @@ profiles.local.csv
 secrets.local.json
 data/
 logs/
+private-backups/
+*.tar.gz.enc
 
 # macOS
 .DS_Store

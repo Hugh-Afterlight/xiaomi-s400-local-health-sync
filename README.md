@@ -106,6 +106,24 @@ Run maintenance verification:
 ./scripts/verify_s400_project.sh
 ```
 
+## Backup And Restore
+
+The private GitHub repo restores the project code, but private local state is
+kept out of Git. Create an encrypted private-state backup for new-Mac restore:
+
+```bash
+./scripts/backup_private_state.sh
+```
+
+On a new Mac:
+
+```bash
+./scripts/bootstrap_new_machine.sh
+./scripts/restore_private_state.sh /path/to/s400-private-state-YYYYMMDD-HHMMSS.tar.gz.enc
+```
+
+See `docs/RESTORE.md`.
+
 ## Privacy
 
 These are intentionally ignored by Git:
