@@ -8,6 +8,7 @@ cd "$BASE"
 LABEL="com.hugh.s400-watch"
 LEDGER="$BASE/data/exports/s400_measurements.csv"
 STATUS_LOG="$BASE/logs/s400_watch.log"
+PROFILES="$BASE/profiles.local.csv"
 
 echo "S400 project status"
 echo "Project: $BASE"
@@ -16,6 +17,7 @@ echo
 echo "Background service:"
 if launchctl print "gui/$(id -u)/${LABEL}" >/tmp/s400_launch_status.$$ 2>/dev/null; then
   grep -E 'state =|pid =|last exit code|runs =' /tmp/s400_launch_status.$$ || true
+  echo "active window: 05:00-09:00 local time; not running outside this window is normal"
 else
   echo "not installed or not running"
 fi
@@ -34,6 +36,19 @@ if [[ -f "$LEDGER" ]]; then
   echo "measurement rows: $rows"
 else
   echo "missing: $LEDGER"
+fi
+echo
+
+echo "Family profile matching:"
+if [[ -f "$PROFILES" ]]; then
+  echo "$PROFILES"
+  tail -n +2 "$PROFILES" | while IFS=, read -r person min_weight max_weight notes; do
+    if [[ -n "$person" ]]; then
+      echo "- $person: ${min_weight}-${max_weight} kg"
+    fi
+  done
+else
+  echo "missing: $PROFILES"
 fi
 echo
 

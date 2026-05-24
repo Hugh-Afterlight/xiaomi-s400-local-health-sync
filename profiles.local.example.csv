@@ -1,0 +1,4 @@
+person_label,min_weight_kg,max_weight_kg,notes
+adult-1,65,100,Around 80 kg.
+adult-2,40,65,Around 50 kg.
+child,20,40,Around 30 kg.

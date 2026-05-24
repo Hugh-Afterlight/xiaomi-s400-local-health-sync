@@ -17,6 +17,9 @@ FIELDNAMES = [
     "measured_at_local",
     "device_label",
     "profile_id",
+    "person_label",
+    "person_match_method",
+    "person_match_confidence",
     "weight_kg",
     "impedance_ohm",
     "impedance_low_ohm",
@@ -27,6 +30,8 @@ FIELDNAMES = [
     "device_model",
     "parser",
 ]
+
+PROFILE_FIELDS = ["person_label", "min_weight_kg", "max_weight_kg"]
 
 
 def row_score(row: dict[str, Any]) -> int:
@@ -78,6 +83,19 @@ def load_existing_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def load_weight_profiles(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle)
+        if not reader.fieldnames:
+            return []
+        missing = [field for field in PROFILE_FIELDS if field not in reader.fieldnames]
+        if missing:
+            raise SystemExit(f"Profile file {path} is missing columns: {', '.join(missing)}")
+        return [row for row in reader if row.get("person_label")]
+
+
 def parse_timestamp(value: Any) -> datetime | None:
     if not value:
         return None
@@ -110,6 +128,29 @@ def close_enough(left: Any, right: Any, tolerance: float) -> bool:
     return abs(left_number - right_number) <= tolerance
 
 
+def classify_person(row: dict[str, Any], profiles: list[dict[str, str]]) -> dict[str, str]:
+    weight = numeric_value(row.get("weight_kg"))
+    if weight is None or not profiles:
+        return {"person_label": "unknown", "person_match_method": "none", "person_match_confidence": "low"}
+
+    matches: list[dict[str, str]] = []
+    for profile in profiles:
+        min_weight = numeric_value(profile.get("min_weight_kg"))
+        max_weight = numeric_value(profile.get("max_weight_kg"))
+        if min_weight is not None and max_weight is not None and min_weight <= weight < max_weight:
+            matches.append(profile)
+
+    if len(matches) == 1:
+        return {
+            "person_label": str(matches[0].get("person_label") or "unknown"),
+            "person_match_method": "weight_range",
+            "person_match_confidence": "high",
+        }
+    if len(matches) > 1:
+        return {"person_label": "ambiguous", "person_match_method": "weight_range_overlap", "person_match_confidence": "low"}
+    return {"person_label": "unknown", "person_match_method": "weight_range_miss", "person_match_confidence": "low"}
+
+
 def has_same_measurement_signature(left: dict[str, Any], right: dict[str, Any]) -> bool:
     if comparable_value(left.get("device_label")) != comparable_value(right.get("device_label")):
         return False
@@ -136,18 +177,42 @@ def is_near_duplicate(row: dict[str, Any], existing_rows: list[dict[str, Any]], 
     return False
 
 
+def rewrite_ledger_if_needed(path: Path, rows: list[dict[str, Any]], profiles: list[dict[str, str]]) -> None:
+    if not path.exists():
+        return
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        reader = csv.reader(handle)
+        current_header = next(reader, [])
+    if current_header == FIELDNAMES:
+        return
+
+    backup_path = path.with_suffix(path.suffix + ".bak")
+    path.replace(backup_path)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=FIELDNAMES, extrasaction="ignore")
+        writer.writeheader()
+        for row in rows:
+            enriched = dict(row)
+            enriched.update(classify_person(enriched, profiles))
+            writer.writerow(enriched)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Append parsed S400 measurements into cumulative CSV ledger.")
     parser.add_argument("--input", required=True, help="Parsed measurement JSONL file")
     parser.add_argument("--ledger", default="data/exports/s400_measurements.csv")
+    parser.add_argument("--profiles", default="profiles.local.csv", help="Optional local CSV with person_label,min_weight_kg,max_weight_kg")
     parser.add_argument("--dedupe-window-minutes", type=float, default=5.0)
     args = parser.parse_args()
 
     input_path = Path(args.input)
     ledger_path = Path(args.ledger)
+    profiles = load_weight_profiles(Path(args.profiles))
     rows = [json.loads(line) for line in input_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     rows = choose_best(rows)
 
+    existing_rows = load_existing_rows(ledger_path)
+    rewrite_ledger_if_needed(ledger_path, existing_rows, profiles)
     existing_rows = load_existing_rows(ledger_path)
     existing_ids = {row["measurement_id"] for row in existing_rows if row.get("measurement_id")}
     dedupe_window = timedelta(minutes=args.dedupe_window_minutes)
@@ -161,6 +226,7 @@ def main() -> int:
             writer.writeheader()
         for row in rows:
             row = dict(row)
+            row.update(classify_person(row, profiles))
             row["measurement_id"] = measurement_id(row)
             row["completeness_score"] = row_score(row)
             if row["measurement_id"] in existing_ids:

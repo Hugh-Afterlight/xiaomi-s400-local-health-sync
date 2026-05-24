@@ -27,8 +27,18 @@ cat > "$PLIST" <<PLIST
   <string>${BASE}</string>
   <key>RunAtLoad</key>
   <true/>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>5</integer>
+    <key>Minute</key>
+    <integer>0</integer>
+  </dict>
   <key>KeepAlive</key>
-  <true/>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
   <key>StandardOutPath</key>
   <string>${OUT_LOG}</string>
   <key>StandardErrorPath</key>

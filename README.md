@@ -86,6 +86,8 @@ Install and start the LaunchAgent:
 ./scripts/install_s400_launch_agent.sh
 ```
 
+By default the background watcher is active only from 05:00 to 09:00 local time. The scanner app is configured as a background-only app, so it should not bounce in the Dock during scan windows.
+
 Stop it:
 
 ```bash
@@ -109,6 +111,7 @@ Run maintenance verification:
 These are intentionally ignored by Git:
 
 - `config.json`
+- `profiles.local.csv`
 - `secrets.local.json`
 - `data/`
 - `logs/`
@@ -130,3 +133,22 @@ Recommended next step:
 1. Fill `templates/user_profiles.example.csv`.
 2. Record same-session Xiaomi Home official values in `templates/xiaomi_official_25_metrics.example.csv`.
 3. Compare local estimates against official values only after collecting paired samples.
+
+## Household Profile Matching
+
+Measurements can be assigned to household members by weight ranges. Start with:
+
+```bash
+cp profiles.local.example.csv profiles.local.csv
+```
+
+Example:
+
+```csv
+person_label,min_weight_kg,max_weight_kg,notes
+adult-1,65,100,Around 80 kg.
+adult-2,40,65,Around 50 kg.
+child,20,40,Around 30 kg.
+```
+
+The cumulative CSV includes `person_label`, `person_match_method`, and `person_match_confidence`.

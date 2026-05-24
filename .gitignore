@@ -7,6 +7,7 @@ __pycache__/
 # Local configuration and private health data
 AGENTS.md
 config.json
+profiles.local.csv
 secrets.local.json
 data/
 logs/

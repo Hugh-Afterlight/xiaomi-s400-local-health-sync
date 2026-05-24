@@ -23,6 +23,7 @@ Included:
 - Optional local Google Drive desktop sync.
 - macOS LaunchAgent background loop.
 - Local cleanup, log rotation, status, and verification scripts.
+- Optional household profile matching by weight range.
 
 Not included:
 
@@ -41,6 +42,9 @@ measurement_id
 measured_at_local
 device_label
 profile_id
+person_label
+person_match_method
+person_match_confidence
 weight_kg
 impedance_ohm
 impedance_low_ohm
@@ -59,6 +63,7 @@ Raw BLE observations and parsed debug JSONL are kept under `data/` and are not c
 Do not commit or share:
 
 - `config.json`
+- `profiles.local.csv`
 - `secrets.local.json`
 - `data/`
 - `logs/`
@@ -89,3 +94,18 @@ Use:
 ```
 
 The verification script is a maintenance command. It builds the scanner, checks local config, syncs the ledger, runs cleanup, checks duplicate protection, and confirms the LaunchAgent status.
+
+## Schedule
+
+The default LaunchAgent starts at 05:00 local time. `watch_s400_loop.sh` exits at 09:00 local time, so the scanner only runs during the morning measurement window.
+
+Override with environment variables if needed:
+
+```text
+S400_ACTIVE_START_HOUR
+S400_ACTIVE_END_HOUR
+```
+
+## Household Matching
+
+`profiles.local.csv` maps weight ranges to people. It is ignored by Git because household member labels are private. Use `profiles.local.example.csv` as a template.

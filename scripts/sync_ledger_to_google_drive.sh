@@ -8,7 +8,7 @@ cd "$BASE"
 LEDGER="${1:-$BASE/data/exports/s400_measurements.csv}"
 TARGET_DIR="${S400_GOOGLE_DRIVE_EXPORT_DIR:-}"
 TARGET_NAME="${S400_GOOGLE_DRIVE_EXPORT_NAME:-s400_measurements.csv}"
-EXPECTED_HEADER="measurement_id,measured_at_local,device_label,profile_id,weight_kg,impedance_ohm,impedance_low_ohm,heart_rate_bpm,rssi,packet_count,completeness_score,device_model,parser"
+EXPECTED_HEADER="measurement_id,measured_at_local,device_label,profile_id,person_label,person_match_method,person_match_confidence,weight_kg,impedance_ohm,impedance_low_ohm,heart_rate_bpm,rssi,packet_count,completeness_score,device_model,parser"
 
 if [[ ! -f "$LEDGER" ]]; then
   echo "Missing ledger: $LEDGER"

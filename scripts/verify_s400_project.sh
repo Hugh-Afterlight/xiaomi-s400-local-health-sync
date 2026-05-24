@@ -15,10 +15,6 @@ done
 
 ./scripts/build_scanner.sh
 ./scripts/check_secrets.py
-./scripts/sync_ledger_to_google_drive.sh
-./scripts/check_google_drive_sync_safety.sh
-./scripts/cleanup_s400_artifacts.sh
-./scripts/secure_local_data_permissions.sh
 
 latest_parsed="$(ls -t data/parsed_measurements/s400_measurements_*.jsonl 2>/dev/null | head -1 || true)"
 if [[ -n "$latest_parsed" ]]; then
@@ -33,9 +29,17 @@ if [[ -n "$latest_parsed" ]]; then
   echo "Ledger duplicate check OK."
 fi
 
-if launchctl print "gui/$(id -u)/com.hugh.s400-watch" >/dev/null 2>&1; then
-  echo "LaunchAgent is installed and running."
+./scripts/sync_ledger_to_google_drive.sh
+./scripts/check_google_drive_sync_safety.sh
+./scripts/cleanup_s400_artifacts.sh
+./scripts/secure_local_data_permissions.sh
+
+if launchctl print "gui/$(id -u)/com.hugh.s400-watch" >/tmp/s400_verify_launch.$$ 2>/dev/null; then
+  state="$(grep -E 'state =' /tmp/s400_verify_launch.$$ | head -1 | sed 's/^[[:space:]]*//')"
+  rm -f /tmp/s400_verify_launch.$$
+  echo "LaunchAgent is installed (${state}; active window is 05:00-09:00)."
 else
+  rm -f /tmp/s400_verify_launch.$$
   echo "Warning: LaunchAgent is not running. Start it with ./scripts/install_s400_launch_agent.sh"
 fi
 
