@@ -1,0 +1,18 @@
+{
+  "device": {
+    "name_keywords": ["S400", "MJTZC01YM", "Mijia Scale S400"],
+    "addresses": [],
+    "service_uuids": [],
+    "manufacturer_ids": []
+  },
+  "scan": {
+    "duration_seconds": 60,
+    "record_all": false,
+    "min_rssi": -95,
+    "dedupe_window_seconds": 2.0
+  },
+  "output": {
+    "observation_dir": "data/ble_observations",
+    "summary_dir": "data/ble_summaries"
+  }
+}

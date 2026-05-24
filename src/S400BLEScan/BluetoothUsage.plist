@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>local.s400-ble-scan</string>
+  <key>CFBundleExecutable</key>
+  <string>s400-ble-scan</string>
+  <key>CFBundleName</key>
+  <string>S400 BLE Scan</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>NSBluetoothAlwaysUsageDescription</key>
+  <string>Scan nearby Bluetooth Low Energy advertisements from the local Xiaomi S400 scale for personal health data capture.</string>
+  <key>NSBluetoothPeripheralUsageDescription</key>
+  <string>Scan nearby Bluetooth Low Energy advertisements from the local Xiaomi S400 scale for personal health data capture.</string>
+</dict>
+</plist>

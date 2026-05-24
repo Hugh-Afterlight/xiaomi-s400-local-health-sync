@@ -1,0 +1,15 @@
+# Local build output
+bin/
+tools/
+__pycache__/
+*.pyc
+
+# Local configuration and private health data
+AGENTS.md
+config.json
+secrets.local.json
+data/
+logs/
+
+# macOS
+.DS_Store
