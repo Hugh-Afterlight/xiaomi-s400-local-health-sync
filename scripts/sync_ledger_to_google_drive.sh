@@ -8,6 +8,7 @@ cd "$BASE"
 LEDGER="${1:-$BASE/data/exports/s400_measurements.csv}"
 TARGET_DIR="${S400_GOOGLE_DRIVE_EXPORT_DIR:-}"
 TARGET_NAME="${S400_GOOGLE_DRIVE_EXPORT_NAME:-s400_measurements.csv}"
+TARGET_SUBDIR="${S400_GOOGLE_DRIVE_EXPORT_SUBDIR:-Health Auto Export/S400 Health Data}"
 EXPECTED_HEADER="measurement_id,measured_at_local,device_label,profile_id,person_label,person_match_method,person_match_confidence,weight_kg,impedance_ohm,impedance_low_ohm,heart_rate_bpm,rssi,packet_count,completeness_score,device_model,parser"
 
 if [[ ! -f "$LEDGER" ]]; then
@@ -29,7 +30,7 @@ if [[ -z "$TARGET_DIR" ]]; then
     "$HOME/Google Drive"
   do
     if [[ -d "$ROOT" ]]; then
-      TARGET_DIR="$ROOT/S400 Health Data"
+      TARGET_DIR="$ROOT/$TARGET_SUBDIR"
       break
     fi
   done

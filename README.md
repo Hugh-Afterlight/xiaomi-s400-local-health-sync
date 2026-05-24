@@ -75,7 +75,7 @@ data/exports/s400_measurements.csv
 If Google Drive desktop is installed, the sanitized CSV is copied to:
 
 ```text
-Google Drive/My Drive/S400 Health Data/s400_measurements.csv
+Google Drive/My Drive/Health Auto Export/S400 Health Data/s400_measurements.csv
 ```
 
 ## Background Capture

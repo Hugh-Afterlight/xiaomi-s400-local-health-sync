@@ -4,6 +4,7 @@ setopt NULL_GLOB
 
 TARGET_DIR="${S400_GOOGLE_DRIVE_EXPORT_DIR:-}"
 TARGET_NAME="${S400_GOOGLE_DRIVE_EXPORT_NAME:-s400_measurements.csv}"
+TARGET_SUBDIR="${S400_GOOGLE_DRIVE_EXPORT_SUBDIR:-Health Auto Export/S400 Health Data}"
 DISALLOWED_FIELDS=(real_mac bind_key token service_data manufacturer_data source_file corebluetooth_id parser_bind_key_fingerprint)
 
 if [[ -z "$TARGET_DIR" ]]; then
@@ -13,7 +14,7 @@ if [[ -z "$TARGET_DIR" ]]; then
     "$HOME/Google Drive"
   do
     if [[ -d "$ROOT" ]]; then
-      TARGET_DIR="$ROOT/S400 Health Data"
+      TARGET_DIR="$ROOT/$TARGET_SUBDIR"
       break
     fi
   done
