@@ -9,6 +9,8 @@ LEDGER="${1:-$BASE/data/exports/s400_measurements.csv}"
 TARGET_DIR="${S400_GOOGLE_DRIVE_EXPORT_DIR:-}"
 TARGET_NAME="${S400_GOOGLE_DRIVE_EXPORT_NAME:-s400_measurements.csv}"
 TARGET_SUBDIR="${S400_GOOGLE_DRIVE_EXPORT_SUBDIR:-Health Auto Export/S400 Health Data}"
+SYNC_ATTEMPTS="${S400_GOOGLE_DRIVE_SYNC_ATTEMPTS:-5}"
+SYNC_RETRY_SECONDS="${S400_GOOGLE_DRIVE_SYNC_RETRY_SECONDS:-5}"
 EXPECTED_HEADER="measurement_id,measured_at_local,device_label,profile_id,person_label,person_match_method,person_match_confidence,weight_kg,impedance_ohm,impedance_low_ohm,heart_rate_bpm,rssi,packet_count,completeness_score,device_model,parser"
 
 if [[ ! -f "$LEDGER" ]]; then
@@ -46,8 +48,34 @@ mkdir -p "$TARGET_DIR"
 TARGET_FILE="$TARGET_DIR/$TARGET_NAME"
 TEMP_FILE="$TARGET_DIR/.${TARGET_NAME}.tmp"
 
-rm -f "$TEMP_FILE"
-cp "$LEDGER" "$TARGET_FILE"
-chmod 600 "$TARGET_FILE" 2>/dev/null || true
+attempt=1
+while (( attempt <= SYNC_ATTEMPTS )); do
+  rm -f "$TEMP_FILE" 2>/dev/null || true
+  if cp "$LEDGER" "$TEMP_FILE"; then
+    chmod 600 "$TEMP_FILE" 2>/dev/null || true
+  else
+    rm -f "$TEMP_FILE" 2>/dev/null || true
+    if (( attempt < SYNC_ATTEMPTS )); then
+      echo "Google Drive sync attempt ${attempt}/${SYNC_ATTEMPTS} failed. Retrying in ${SYNC_RETRY_SECONDS}s..." >&2
+      sleep "$SYNC_RETRY_SECONDS"
+    fi
+    attempt=$((attempt + 1))
+    continue
+  fi
 
-echo "Synced sanitized ledger to: $TARGET_FILE"
+  if mv -f "$TEMP_FILE" "$TARGET_FILE"; then
+    chmod 600 "$TARGET_FILE" 2>/dev/null || true
+    echo "Synced sanitized ledger to: $TARGET_FILE"
+    exit 0
+  fi
+
+  rm -f "$TEMP_FILE" 2>/dev/null || true
+  if (( attempt < SYNC_ATTEMPTS )); then
+    echo "Google Drive sync attempt ${attempt}/${SYNC_ATTEMPTS} failed. Retrying in ${SYNC_RETRY_SECONDS}s..." >&2
+    sleep "$SYNC_RETRY_SECONDS"
+  fi
+  attempt=$((attempt + 1))
+done
+
+echo "Google Drive sync failed after ${SYNC_ATTEMPTS} attempts: $TARGET_FILE" >&2
+exit 1
