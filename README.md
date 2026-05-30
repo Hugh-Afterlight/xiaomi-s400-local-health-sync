@@ -106,6 +106,16 @@ Run maintenance verification:
 ./scripts/verify_s400_project.sh
 ```
 
+Check whether the local CSV and Google Drive CSV are in sync:
+
+```bash
+./scripts/check_sync_health.sh
+```
+
+If background Google Drive sync repeatedly fails while manual sync works, grant
+Full Disk Access to `/bin/zsh` in macOS System Settings. The scheduled watcher
+runs through `/bin/zsh`.
+
 ## Backup And Restore
 
 The private GitHub repo restores the project code, but private local state is
