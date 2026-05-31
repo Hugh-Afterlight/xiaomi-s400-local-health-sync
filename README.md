@@ -156,7 +156,29 @@ Only the sanitized cumulative CSV is intended for Google Drive sync. Check the s
 
 Xiaomi Home's full body composition report is likely generated from the raw measurements plus profile data and Xiaomi's private algorithm.
 
-Recommended next step:
+For official Xiaomi Home report screenshots, place long screenshots in:
+
+```text
+Google Drive/My Drive/Health Auto Export/s400 图片报告/
+```
+
+Extract the screenshot report into CSV:
+
+```bash
+./scripts/extract_xiaomi_report_images.py
+```
+
+The extracted CSV is written to:
+
+```text
+data/exports/s400_official_reports.csv
+Google Drive/My Drive/Health Auto Export/S400 Health Data/s400_official_reports.csv
+```
+
+This is a semi-automatic OCR route. It captures Xiaomi Home's displayed report
+values from screenshots; it does not call Xiaomi Cloud APIs.
+
+Recommended calibration workflow:
 
 1. Fill `templates/user_profiles.example.csv`.
 2. Record same-session Xiaomi Home official values in `templates/xiaomi_official_25_metrics.example.csv`.
