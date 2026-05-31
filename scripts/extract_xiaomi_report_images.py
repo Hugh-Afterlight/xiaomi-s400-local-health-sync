@@ -13,6 +13,7 @@ import csv
 import hashlib
 import json
 import re
+import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -131,6 +132,7 @@ def numbers(text: str) -> list[float]:
         .replace("M", "↓")
         .replace("O", "0")
     )
+    cleaned = re.sub(r"(?<=\d\.)[gG](?=$|[^0-9A-Za-z])", "9", cleaned)
     return [float(value) for value in re.findall(r"-?\d+(?:\.\d+)?", cleaned)]
 
 
@@ -362,12 +364,45 @@ def write_csv(path: Path, rows: Iterable[dict[str, str]]) -> None:
     path.chmod(0o600)
 
 
+def unique_archive_path(source_path: Path, archive_dir: Path) -> Path:
+    target = archive_dir / source_path.name
+    if not target.exists():
+        return target
+
+    digest = hashlib.sha256(source_path.read_bytes()).hexdigest()[:8]
+    target = archive_dir / f"{source_path.stem}-{digest}{source_path.suffix}"
+    if not target.exists():
+        return target
+
+    counter = 2
+    while True:
+        numbered = archive_dir / f"{source_path.stem}-{digest}-{counter}{source_path.suffix}"
+        if not numbered.exists():
+            return numbered
+        counter += 1
+
+
+def archive_images(image_paths: Iterable[Path], archive_dir: Path) -> list[Path]:
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archived: list[Path] = []
+    for image_path in image_paths:
+        if not image_path.exists():
+            continue
+        target = unique_archive_path(image_path, archive_dir)
+        shutil.move(str(image_path), str(target))
+        target.chmod(0o600)
+        archived.append(target)
+    return archived
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", type=Path, default=default_input_dir())
     parser.add_argument("--local-output", type=Path, default=BASE / "data" / "exports" / "s400_official_reports.csv")
     parser.add_argument("--drive-output", type=Path, default=default_drive_output())
     parser.add_argument("--ledger", type=Path, default=BASE / "data" / "exports" / "s400_measurements.csv")
+    parser.add_argument("--archive-dir", type=Path, default=None)
+    parser.add_argument("--no-archive", action="store_true")
     parser.add_argument("--dump-ocr", action="store_true")
     parser.add_argument(
         "--reprocess-all",
@@ -378,21 +413,21 @@ def main() -> int:
 
     images = image_files(args.input_dir)
     if not images:
-        print(f"No report images found in: {args.input_dir}", file=sys.stderr)
-        return 1
+        print(f"No pending report images found in: {args.input_dir}")
+        return 0
 
     existing_rows = {} if args.reprocess_all else load_existing_report_rows(args.local_output, args.drive_output)
     seen_source_files = {
         row["source_file"] for row in existing_rows.values() if row.get("source_file")
     }
-    skipped_existing: list[str] = []
-    processed_new: list[str] = []
+    skipped_existing: list[Path] = []
+    processed_new: list[Path] = []
     rows_by_key = dict(existing_rows)
 
     ledger_rows = load_ledger_rows(args.ledger)
     for image_path in images:
         if image_path.name in seen_source_files:
-            skipped_existing.append(image_path.name)
+            skipped_existing.append(image_path)
             continue
 
         lines = ocr_image(image_path)
@@ -402,7 +437,7 @@ def main() -> int:
                 print(line)
         row = parse_report(image_path, lines, ledger_rows)
         rows_by_key[image_path.name] = row
-        processed_new.append(image_path.name)
+        processed_new.append(image_path)
 
     rows = list(rows_by_key.values())
     rows.sort(key=lambda item: item.get("measured_at_local", ""))
@@ -413,15 +448,26 @@ def main() -> int:
         write_csv(args.drive_output, rows)
         print(f"Google Drive official report CSV: {args.drive_output}")
 
+    archived: list[Path] = []
+    if not args.no_archive:
+        archive_dir = args.archive_dir or (args.input_dir / "存档")
+        archived = archive_images([*processed_new, *skipped_existing], archive_dir)
+        print(f"Archived images: {len(archived)}")
+        print(f"Archive folder: {archive_dir}")
+
     print(f"Total reports in CSV: {len(rows)}")
     print(f"New images processed: {len(processed_new)}")
     print(f"Existing images skipped by filename: {len(skipped_existing)}")
-    for name in processed_new:
-        print(f"Processed image: {name}")
-    for name in skipped_existing[:20]:
-        print(f"Skipped existing image: {name}")
+    for path in processed_new:
+        print(f"Processed image: {path.name}")
+    for path in skipped_existing[:20]:
+        print(f"Skipped existing image: {path.name}")
     if len(skipped_existing) > 20:
         print(f"Skipped existing image: ... {len(skipped_existing) - 20} more")
+    for path in archived[:20]:
+        print(f"Archived image: {path.name}")
+    if len(archived) > 20:
+        print(f"Archived image: ... {len(archived) - 20} more")
 
     for row in rows:
         print(

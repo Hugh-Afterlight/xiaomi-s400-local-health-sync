@@ -170,10 +170,25 @@ Extract the screenshot report into CSV:
 
 The extractor is incremental: if a screenshot filename already appears in
 `s400_official_reports.csv`, it is skipped. Only new filenames are OCR-processed.
+After a screenshot is processed or skipped, it is moved into:
+
+```text
+Google Drive/My Drive/Health Auto Export/s400 图片报告/存档/
+```
+
+If there are no new screenshots in the pending folder, the extractor exits
+successfully without changing the CSV.
+
 To intentionally rebuild all screenshot rows:
 
 ```bash
 ./scripts/extract_xiaomi_report_images.py --reprocess-all
+```
+
+For debugging without moving images:
+
+```bash
+./scripts/extract_xiaomi_report_images.py --no-archive
 ```
 
 Install the daily 09:00 extractor:
