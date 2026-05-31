@@ -24,6 +24,17 @@ fi
 rm -f /tmp/s400_launch_status.$$
 echo
 
+echo "Official report extractor:"
+REPORT_LABEL="com.hugh.s400-report-extract"
+if launchctl print "gui/$(id -u)/${REPORT_LABEL}" >/tmp/s400_report_launch_status.$$ 2>/dev/null; then
+  grep -E 'state =|pid =|last exit code|runs =' /tmp/s400_report_launch_status.$$ || true
+  echo "schedule: daily at 09:00 local time"
+else
+  echo "not installed"
+fi
+rm -f /tmp/s400_report_launch_status.$$
+echo
+
 echo "Secrets:"
 ./scripts/check_secrets.py || true
 echo

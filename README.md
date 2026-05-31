@@ -168,6 +168,18 @@ Extract the screenshot report into CSV:
 ./scripts/extract_xiaomi_report_images.py
 ```
 
+Install the daily 09:00 extractor:
+
+```bash
+./scripts/install_s400_report_launch_agent.sh
+```
+
+Stop the daily extractor:
+
+```bash
+./scripts/uninstall_s400_report_launch_agent.sh
+```
+
 The extracted CSV is written to:
 
 ```text
