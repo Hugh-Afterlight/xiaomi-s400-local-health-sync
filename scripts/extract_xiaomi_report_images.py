@@ -299,6 +299,24 @@ def load_ledger_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def normalize_report_row(row: dict[str, str]) -> dict[str, str]:
+    return {field: row.get(field, "") for field in FIELDNAMES}
+
+
+def load_existing_report_rows(local_output: Path, drive_output: Path | None) -> dict[str, dict[str, str]]:
+    rows: dict[str, dict[str, str]] = {}
+    for path in (drive_output, local_output):
+        if not path or not path.is_file():
+            continue
+        with path.open(newline="", encoding="utf-8") as handle:
+            for index, row in enumerate(csv.DictReader(handle)):
+                source_file = row.get("source_file", "")
+                fallback_key = row.get("report_id", "") or f"{path.name}:{index}"
+                key = source_file or f"report:{fallback_key}"
+                rows[key] = normalize_report_row(row)
+    return rows
+
+
 def match_local_measurement(
     measured_at: str, weight: float | None, ledger_rows: list[dict[str, str]]
 ) -> MatchResult:
@@ -351,6 +369,11 @@ def main() -> int:
     parser.add_argument("--drive-output", type=Path, default=default_drive_output())
     parser.add_argument("--ledger", type=Path, default=BASE / "data" / "exports" / "s400_measurements.csv")
     parser.add_argument("--dump-ocr", action="store_true")
+    parser.add_argument(
+        "--reprocess-all",
+        action="store_true",
+        help="Ignore existing source_file rows and OCR every image again.",
+    )
     args = parser.parse_args()
 
     images = image_files(args.input_dir)
@@ -358,17 +381,30 @@ def main() -> int:
         print(f"No report images found in: {args.input_dir}", file=sys.stderr)
         return 1
 
+    existing_rows = {} if args.reprocess_all else load_existing_report_rows(args.local_output, args.drive_output)
+    seen_source_files = {
+        row["source_file"] for row in existing_rows.values() if row.get("source_file")
+    }
+    skipped_existing: list[str] = []
+    processed_new: list[str] = []
+    rows_by_key = dict(existing_rows)
+
     ledger_rows = load_ledger_rows(args.ledger)
-    rows: list[dict[str, str]] = []
     for image_path in images:
+        if image_path.name in seen_source_files:
+            skipped_existing.append(image_path.name)
+            continue
+
         lines = ocr_image(image_path)
         if args.dump_ocr:
             print(f"--- {image_path.name} ---")
             for line in lines:
                 print(line)
         row = parse_report(image_path, lines, ledger_rows)
-        rows.append(row)
+        rows_by_key[image_path.name] = row
+        processed_new.append(image_path.name)
 
+    rows = list(rows_by_key.values())
     rows.sort(key=lambda item: item.get("measured_at_local", ""))
     write_csv(args.local_output, rows)
     print(f"Local official report CSV: {args.local_output}")
@@ -377,7 +413,16 @@ def main() -> int:
         write_csv(args.drive_output, rows)
         print(f"Google Drive official report CSV: {args.drive_output}")
 
-    print(f"Extracted reports: {len(rows)}")
+    print(f"Total reports in CSV: {len(rows)}")
+    print(f"New images processed: {len(processed_new)}")
+    print(f"Existing images skipped by filename: {len(skipped_existing)}")
+    for name in processed_new:
+        print(f"Processed image: {name}")
+    for name in skipped_existing[:20]:
+        print(f"Skipped existing image: {name}")
+    if len(skipped_existing) > 20:
+        print(f"Skipped existing image: ... {len(skipped_existing) - 20} more")
+
     for row in rows:
         print(
             "Report: "

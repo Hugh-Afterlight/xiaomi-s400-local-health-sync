@@ -168,6 +168,14 @@ Extract the screenshot report into CSV:
 ./scripts/extract_xiaomi_report_images.py
 ```
 
+The extractor is incremental: if a screenshot filename already appears in
+`s400_official_reports.csv`, it is skipped. Only new filenames are OCR-processed.
+To intentionally rebuild all screenshot rows:
+
+```bash
+./scripts/extract_xiaomi_report_images.py --reprocess-all
+```
+
 Install the daily 09:00 extractor:
 
 ```bash
